@@ -17,25 +17,41 @@ def init_db():
     conn.commit()
     conn.close()
 
+@app.route('/')
+def home():
+    return "Welcome to the What's Beauty API"
+
 @app.route('/update_count', methods=['POST'])
 def update_count():
     data = request.get_json()
-    text_id = data['id']
-    conn = sqlite3.connect('data.db')
-    c = conn.cursor()
-    c.execute(f'UPDATE counts SET {text_id} = {text_id} + 1 WHERE id = 1')
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'success'})
+    text_id = data.get('id')
+    if text_id not in ['text1', 'text2', 'text3', 'text4']:
+        return jsonify({'status': 'error', 'message': 'Invalid id'}), 400
+    
+    try:
+        conn = sqlite3.connect('data.db')
+        c = conn.cursor()
+        c.execute(f'UPDATE counts SET {text_id} = {text_id} + 1 WHERE id = 1')
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/get_counts', methods=['GET'])
 def get_counts():
-    conn = sqlite3.connect('data.db')
-    c = conn.cursor()
-    c.execute('SELECT text1, text2, text3, text4 FROM counts WHERE id = 1')
-    row = c.fetchone()
-    conn.close()
-    return jsonify({'text1': row[0], 'text2': row[1], 'text3': row[2], 'text4': row[3]})
+    try:
+        conn = sqlite3.connect('data.db')
+        c = conn.cursor()
+        c.execute('SELECT text1, text2, text3, text4 FROM counts WHERE id = 1')
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return jsonify({'text1': row[0], 'text2': row[1], 'text3': row[2], 'text4': row[3]})
+        else:
+            return jsonify({'status': 'error', 'message': 'No data found'}), 404
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     init_db()
